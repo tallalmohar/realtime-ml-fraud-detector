@@ -7,11 +7,11 @@
 - [X] Test Infrastructure connectivity (Verify Kafka and DB are reachable)
 
 ## Sprint 1: The Transaction Producer (The Stream)
-- [ ] Add `JavaFaker` dependency for mock data generation
-- [ ] Implement `Transaction` serialization logic (JSON)
-- [ ] Configure `KafkaTemplate` with Producer properties
-- [ ] Create `TransactionGeneratorService` with `@Scheduled` task
-- [ ] Validate data flow: Verify messages appear in Kafka 'transactions' topic
+- [X] Add `JavaFaker` dependency for mock data generation
+- [X] Implement `Transaction` serialization logic (JSON)
+- [X] Configure `KafkaTemplate` with Producer properties
+- [X] Create `TransactionGeneratorService` with `@Scheduled` task
+- [X] Validate data flow: Verify messages appear in Kafka 'transactions' topic
 
 ## Sprint 2: Core Analysis Consumer & ML Integration
 - [ ] Add `onnxruntime` dependency to Spring Boot project

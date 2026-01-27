@@ -1,13 +1,13 @@
-Just recording down my thoughts as I work on the project.
-
+Just recording down my thoughts and what I understand as I work on the project. I can refer to this during the testing phase.
 
 Sprint 0 - Notes+Thoughts:
+
 - fraud-producer -> Data generation (this is replaceable with real transaction system if needed)
 
 - fraud-consumer -> Business Logic (ML inference + persistence)
 
 - fraud-common -> Shared contracts
- 
+
 The multi module system helps because then we can run 5 producers but only 2 consumer instances, you can scale them independently based on load. Being deployed independently, we can deploy a new version of the consumer without needed to touch the producer.
 
 Helpful in keeping the docker images small because the producer doesn't need PostgreSQL driver or the ONNX runtime library. (because it doesn't need to)
@@ -18,40 +18,37 @@ General "Global Settings", decides the big decisions like what version of the to
 Local POM
 Local settings, can also define internal relationships between the different modules that might depend on eachother.
 
-
 the docker compose file - docker-compose.yml
-My application isnt made up of many different services that work together 
+My application isnt made up of many different services that work together
 include:
+
 - a message broker (kafka) to handle the stream of transactions
 - a db (postgresql) to store fraud alerts
-- a monitoring tool (prometheus ) to watch over the system 
+- a monitoring tool (prometheus ) to watch over the system
 - a coordination service for kafka (zookeeper)
 
 Manually installing, configuring and running each of these steps on my laptop won't get me too far so I run them on isolated containers.
 
 docker-compose : a tool that lets you define and manage this entire multi-container application with single config file (docker-compose.yml)
 
-
 Breakdown of the Docker file:
 (This will also help with understanding the application and how each service plays a role )
 
 services: this is the main section where I defined each component of our infrastructure
-	zookeeper: Kafka uses Zookeeper for managing it's cluster state, tracking which broker are alive and storing configuration metadata
-	kafka: this is the core message broker. I've configured two listeners:
-		-localhost:9092 : For the local application to connect to Kafka from outside the docker network
-		-kafka:29092: For internal communication between services within the docker network.
-	postgres: A postgreSQL db for storing fradualent transactions. I've set up a persistent volume (postgres_data) to ensure that the data is saved even if you restart the container
-	prometheus: This is the monitoring service. It's configured to look for pormetheus.eml file
-networks: fraud-detection-network has been defined. This allows the containers to communicated with each other using their services name
-	- for example kafka service can reach the zookeeper service using it's hostname, zookeeper
+zookeeper: Kafka uses Zookeeper for managing it's cluster state, tracking which broker are alive and storing configuration metadata
+kafka: this is the core message broker. I've configured two listeners:
+-localhost:9092 : For the local application to connect to Kafka from outside the docker network
+-kafka:29092: For internal communication between services within the docker network.
+postgres: A postgreSQL db for storing fradualent transactions. I've set up a persistent volume (postgres_data) to ensure that the data is saved even if you restart the container
+prometheus: This is the monitoring service. It's configured to look for pormetheus.eml file
+networks: fraud-detection-network has been defined. This allows the containers to communicated with each other using their services name - for example kafka service can reach the zookeeper service using it's hostname, zookeeper
 volumes: This seciton defines the persistent storange for the pg db
 
 Last note on the prometheus.yml
 
-- this is just a simple config file for Prometheus. It tells prometheus to look at host.docker.interanal:8080 and scrape metrics from its /actuator/prometheus endpoint. 
+- this is just a simple config file for Prometheus. It tells prometheus to look at host.docker.interanal:8080 and scrape metrics from its /actuator/prometheus endpoint.
 
 host.docker.internal is a special DNS name that allows docker containers to connect to services running on the host machine (Prometheus running on a container will be able to interact with my springboot application running on my laptop ex.)
-
 
 Testing Kafka Connectivity:
 The most basic test is just creating a topic
@@ -67,8 +64,7 @@ kafka-topics: this is the name of the Kafka script for managing topics
 --partitions 3: this split the topic into 3 partitions. allowing for parallel processing by consumers which is good for scalability (prob not necessary as I dont have any users lol)
 --replication-factor 1: this basically means that there will be only on copy of our data. In a prod env you would have a higher replication factor for fault tolerance, but since this is a local env 1 is good enough
 
-
-we now need to test the postgresql connectivity 
+we now need to test the postgresql connectivity
 
 docker exec -it postgres psql -U fraud_user -d fraud_detection
 docker exec -it postgres : execute command in postgres container
@@ -82,7 +78,7 @@ SELECT version(); and exit
 Sprint 1 - Thoughts + notes
 Sprint 1 comprieses of creating a springboot application that consistently generates realistic and random financial transactions and sends them to a Kafka Topic.
 
-Transaction Data Model 
+Transaction Data Model
 This hellps us create a shared model between the producer and consumer so both can understand the data passed between them.
 
 TransactionGenerator.java is needed so it can produce the transaction data for my application. This will be usefull later in testing when I want to stress test.
@@ -91,21 +87,30 @@ Spring framework -> it works here because this is a service (class that contains
 
 faker library for fake transaction, this was very useful actually in generating realistic fake data.
 
-application.properties - this file is the standard for springboot app to store its config settings, need to put server ports , db connections and kafka connections 
+application.properties - this file is the standard for springboot app to store its config settings, need to put server ports , db connections and kafka connections
 
 kakfa serializers in applications.properties -> when we send the transaction object to kafka. it needs to converted to stream of bytes (serializers duh!) here we tell kafka how to preform the conversion for the key and value fo the message, JSON STRINGS SUPRISE!
 just a quick review of what each one means (just look at the file if you are confused): key-serializer (simple string for our message key so string serializer) value-serializer: JsonSerializer converst my POJO into a JSON String
 
-Implementing the kafka producer: we need something that sends the messages now that we can construct the messages. 
+Implementing the kafka producer: we need something that sends the messages now that we can construct the messages.
 
 KafkaProducerService.java - isolated logic to interact with the external kafka system
 
 KafkaTemplate -> spring kafka helper class that helps with the process of sending the messages. manually constructing this would have been a headache. Need to dependecy inject this.
 
-the sendTransaction method just sends my transaction pojo to kafka (serialized as highlighted before) 
+the sendTransaction method just sends my transaction pojo to kafka (serialized as highlighted before)
 the first param is a string that needs to match the topic that kafka docker instance already has (case sensitive name)
 
-Schedule Transaction Generation 
+Schedule Transaction Generation
 The goal is to create a continious stream of data. Easy with teh spring built-in sceduling, we can sed new transactions every few seconds.
 
 very interesting service! @EnableScheduling on the springbootapplication class. My ScheduledTransactionProducer implements the produceTransaction that generates a transaction and sends it to kafka every 2seconds.
+
+TESTED! the Kafkaproducerservice works and sends fake transaction's to the Kafka!
+example:
+{"transactionID":"af3a49bb-b930-4dc7-8db4-b7ef47073611","userId":"6007-2249-8567-0443","amount":214.92,"merchantId":"Stark Inc","timestamp":null,"location":null,"paymentMethod":null}
+
+
+Next step: I need to implement the fraud-consumer service that listens to these "transaction" topic, processes each transaction through a ML model and determines if it's fraudulent
+
+we have already made the fraud producer spring app, now we need a spring app for our consumer.

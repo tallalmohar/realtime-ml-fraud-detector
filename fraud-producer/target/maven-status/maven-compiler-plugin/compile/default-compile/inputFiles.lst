@@ -1,0 +1,4 @@
+/Users/tallalmohar/Documents/Real-time-Financial-Fraud-Detection-System/fraud-producer/src/main/java/com/fraud/producer/FraudProducerApplication.java
+/Users/tallalmohar/Documents/Real-time-Financial-Fraud-Detection-System/fraud-producer/src/main/java/com/fraud/producer/service/KafkaProducerService.java
+/Users/tallalmohar/Documents/Real-time-Financial-Fraud-Detection-System/fraud-producer/src/main/java/com/fraud/producer/service/ScheduledTransactionProducer.java
+/Users/tallalmohar/Documents/Real-time-Financial-Fraud-Detection-System/fraud-producer/src/main/java/com/fraud/producer/service/TransactionGenerator.java

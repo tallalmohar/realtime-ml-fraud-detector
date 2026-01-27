@@ -2,12 +2,21 @@
 <project version="4">
   <component name="CompilerConfiguration">
     <annotationProcessing>
+      <profile default="true" name="Default" enabled="true" />
       <profile name="Maven default annotation processors profile" enabled="true">
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
-        <module name="fraud-common" />
+      </profile>
+      <profile name="Annotation profile for real-time-fraud-check" enabled="true">
+        <sourceOutputDir name="target/generated-sources/annotations" />
+        <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
+        <outputRelativeToContentRoot value="true" />
+        <processorPath useClasspath="false">
+          <entry name="$MAVEN_REPOSITORY$/org/projectlombok/lombok/1.18.32/lombok-1.18.32.jar" />
+        </processorPath>
         <module name="fraud-producer" />
+        <module name="fraud-common" />
         <module name="fraud-consumer" />
       </profile>
     </annotationProcessing>
@@ -17,6 +26,7 @@
       <module name="fraud-common" options="-parameters" />
       <module name="fraud-consumer" options="-parameters" />
       <module name="fraud-producer" options="-parameters" />
+      <module name="real-time-fraud-check" options="-parameters" />
     </option>
   </component>
 </project>
