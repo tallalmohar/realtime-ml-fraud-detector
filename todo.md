@@ -14,8 +14,8 @@
 - [X] Validate data flow: Verify messages appear in Kafka 'transactions' topic
 
 ## Sprint 2: Core Analysis Consumer & ML Integration
-- [ ] Add `onnxruntime` dependency to Spring Boot project
-- [ ] Set up `@KafkaListener` to ingest transaction stream
+- [X] Add `onnxruntime` dependency to Spring Boot project
+- [X] Set up `@KafkaListener` to ingest transaction stream
 - [ ] Implement `OnnxModelConfig` to load `.onnx` file as a Singleton Bean
 - [ ] Create `FeatureEngineeringService` (Normalize/Scale input data for the model)
 - [ ] Implement Inference Logic (Convert Transaction -> Tensor -> Prediction)

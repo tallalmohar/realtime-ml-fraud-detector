@@ -114,3 +114,25 @@ example:
 Next step: I need to implement the fraud-consumer service that listens to these "transaction" topic, processes each transaction through a ML model and determines if it's fraudulent
 
 we have already made the fraud producer spring app, now we need a spring app for our consumer.
+likewise with our producers application.properties file we need to add some deserializers 
+
+ONNX Runtime Dependency
+This allows java applications to load and run ml models 
+
+@KafkaListener annotation automatically:
+-Polls the kafka topics in the background
+-deserializes json messages into transaction pojos
+-calls method for each message
+-handles the offset commits 
+-manages connection failures and retries
+
+
+How this will all work: (Subject to change if too confusing or unecessary!!)
+
+- This is the entry point for all the messages from kafka 
+- Every transaction produced by fraud-producer will flow through a method
+- this is where you will call fraud detection service 
+- before implementing the fraud dectection service i can just log the recieved transaction
+fraud-dection-group (if i run multiple instances of fraud consumer with the same group-id 
+kafka can automatically distribute the messages)
+
