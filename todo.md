@@ -16,8 +16,8 @@
 ## Sprint 2: Core Analysis Consumer & ML Integration
 - [X] Add `onnxruntime` dependency to Spring Boot project
 - [X] Set up `@KafkaListener` to ingest transaction stream
-- [ ] Implement `OnnxModelConfig` to load `.onnx` file as a Singleton Bean
-- [ ] Create `FeatureEngineeringService` (Normalize/Scale input data for the model)
+- [X] Implement `OnnxModelConfig` to load `.onnx` file as a Singleton Bean
+- [X] Create `FeatureEngineeringService` (Normalize/Scale input data for the model)
 - [ ] Implement Inference Logic (Convert Transaction -> Tensor -> Prediction)
 
 ## Sprint 3: The Data Sink & Alerting

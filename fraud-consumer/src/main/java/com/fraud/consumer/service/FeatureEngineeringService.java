@@ -36,7 +36,7 @@ public class FeatureEngineeringService {
         return features;
     }
 
-    
+
     private float encodePaymentMethod(String paymentMethod) {
         switch (paymentMethod) {
             case "CREDIT_CARD":

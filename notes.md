@@ -197,4 +197,24 @@ features[5] -> location has (same logic as merchat)
 
 
 fraud detection service
+this is the service that ties everything together
 
+in this service we will 
+- inject the ortsession bean
+- inject the featureEngineeringService
+- method boolean isFradulent 
+	- this extracts features 
+	- wraps feature in ONNX tensor
+	- runs ML inference
+	- interprets the output
+	-return true/ false
+
+i havn't added a real trained model yet so i will be using a temp rule-based logic (real model gets added @Spring 5)
+
+Transactions > $900 → flag as fraud
+Payment method "CRYPTO" → flag as fraud
+Everything else → legitimate
+
+im just using temp rule based logic before i train the model
+the flow will look like 
+Producer -> Kafka -> Consumer -> feature Engineering -> Rules -> logging 
