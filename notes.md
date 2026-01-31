@@ -226,3 +226,45 @@ how the app works as of now
 4- Simple if/else rules check amount and payment method
 5- returns true/false
 6-TransactionConsumer logs: "Fraud" or "Ok"
+
+some of the errors that needed correcting and why
+
+- my FraudDetectionService constructor expected an OrtSession bean
+  but that bean didn't exist because i made it conditional (only loads if spring.ml.enabled=true)
+  by default spring requires all constructors params to have matching beans available
+  Solution => we add 2 annotaions
+  -@Autowired - explicitly tells spring "use constructor injections here"
+  -@Nullable - Tells spring this param is optional (ok to be null)
+
+Sprint 3 - DataSink and Alerting
+
+As of right now my data just gets logged and then it disappears we need to
+1- save the data into postgreSQL (perm storage)
+2- send fraud alerts to a seperate kafka topic (for downstream systems )
+3- route transaction based to fraud detection result
+
+spring.datasource.* -> tells spring how to connect to docker postgresql
+spring.jpa.hibernate.ddl-auto=update -> Hibernate automatically creates/updates tables based on my entities
+spring.jpa.show-sql=true -> logs sql quries (debugging)
+
+
+JPA needs a java class that maps to a db table. this entity is going respresent one row in fradulent_transactions table
+
+
+FraudulentTransaction.java 
+is is object that is going to fill our fraudulent_transaction table in postgreSQL
+dbTransactionID will autoincrement
+
+for the kafka fraud alerts 
+fraud-consumer is Both consumer and a producer
+it consumes from transaction topic and it proccues fraud-alerts
+
+finished saving to db for persistence data
+flow so far
+1. Producer generates transaction with amount > $900
+2. Consumer receives it from `transactions` topic
+3. FraudDetectionService flags it as fraud (HIGH_VALUE)
+4. FraudPersistenceService saves to PostgreSQL
+5. FraudAlertService sends to `fraud-alerts` topic
+6. Console consumer shows the alert
+7. Database query shows the saved record

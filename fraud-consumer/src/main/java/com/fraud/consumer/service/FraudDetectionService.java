@@ -4,6 +4,7 @@ import ai.onnxruntime.OnnxTensor;
 import ai.onnxruntime.OrtEnvironment;
 import ai.onnxruntime.OrtException;
 import ai.onnxruntime.OrtSession;
+import com.fraud.consumer.model.FraudResult;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
@@ -28,13 +29,7 @@ public class FraudDetectionService {
 	// For Sprint 5: Set to false when real ML model is trained
 	private final boolean USE_RULE_BASED_DETECTION;
 
-	/**
-	 * Constructor injection - Spring automatically provides these beans.
-	 * OrtSession is OPTIONAL - may be null if ML is disabled (Sprint 2).
-	 * 
-	 * @param modelSession              - The loaded ONNX model (null in Sprint 2)
-	 * @param featureEngineeringService - Feature extraction service
-	 */
+
 	@Autowired
 	public FraudDetectionService(@Nullable OrtSession modelSession,
 			FeatureEngineeringService featureEngineeringService) {
@@ -52,8 +47,8 @@ public class FraudDetectionService {
 		}
 	}
 
-	public boolean isFraudulent(Transaction transaction) {
-
+	public FraudResult isFraudulent(Transaction transaction) {
+		FraudResult fraudResult = new FraudResult();
 		if (USE_RULE_BASED_DETECTION) {
 			return detectFraudUsingRules(transaction);
 		}
@@ -67,21 +62,35 @@ public class FraudDetectionService {
 		 * }
 		 * return false;
 		 */
-		return false;
+		fraudResult.setProbability(0f);
+		fraudResult.setReason("CLEAN");
+		fraudResult.setFraud(false);
+		return fraudResult;
 	}
 	// temp rule based fraud detection for testing
 
-	private boolean detectFraudUsingRules(Transaction transaction) {
+	private FraudResult detectFraudUsingRules(Transaction transaction) {
+		FraudResult fraudResult = new FraudResult();
 		if (transaction.getAmount().compareTo(BigDecimal.valueOf(900)) > 0) {
 			log.warn("RULE : High-Value transaction flagged: ${}", transaction.getAmount());
-			return true;
+			fraudResult.setFraud(true);
+			fraudResult.setProbability(100f);
+			fraudResult.setReason("HIGH_VALUE");
+			return fraudResult;
 		}
 
 		if ("CRYPTO".equals(transaction.getPaymentMethod())) {
 			log.warn("RULE: CRYPTO payment flagged");
-			return true;
+			fraudResult.setReason("CRYPTO");
+			fraudResult.setFraud(true);
+			fraudResult.setProbability(100f);
+			return fraudResult;
 		}
-		return false; // for everything else
+
+		fraudResult.setFraud(false);
+		fraudResult.setReason("CLEAN");
+		fraudResult.setProbability(0f);
+		return fraudResult; // for everything else
 	}
 	/*
 	 * FUTURE: real ml based fraud detection

@@ -21,11 +21,11 @@
 - [X] Implement Inference Logic (Convert Transaction -> Tensor -> Prediction)
 
 ## Sprint 3: The Data Sink & Alerting
-- [ ] Configure Spring Data JPA and PostgreSQL connection
-- [ ] Create `FraudulentTransaction` Entity and Repository
-- [ ] Implement logic to route "Clean" vs "Fraud" transactions
-- [ ] Set up a secondary Kafka Producer for the 'fraud-alerts' topic
-- [ ] Verify persistence: Check PostgreSQL for flagged records
+- [X] Configure Spring Data JPA and PostgreSQL connection
+- [X] Create `FraudulentTransaction` Entity and Repository
+- [X] Implement logic to route "Clean" vs "Fraud" transactions
+- [X] Set up a secondary Kafka Producer for the 'fraud-alerts' topic
+- [X] Verify persistence: Check PostgreSQL for flagged records
 
 ## Sprint 4: Monitoring & Observability
 - [ ] Add `Micrometer` and `Actuator` dependencies
