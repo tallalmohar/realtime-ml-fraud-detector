@@ -28,7 +28,7 @@
 - [X] Verify persistence: Check PostgreSQL for flagged records
 
 ## Sprint 4: Monitoring & Observability
-- [ ] Add `Micrometer` and `Actuator` dependencies
+- [X] Add `Micrometer` and `Actuator` dependencies
 - [ ] Define custom `Counter` for "Total Transactions" and "Fraud Detected"
 - [ ] Define `Timer` or `Gauge` for Inference Latency (ms)
 - [ ] Configure Prometheus scrape target in `application.yml`

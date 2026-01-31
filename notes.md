@@ -268,3 +268,49 @@ flow so far
 5. FraudAlertService sends to `fraud-alerts` topic
 6. Console consumer shows the alert
 7. Database query shows the saved record
+
+
+So far the project has been just been making sure that everything works 
+now i add the monitoring service
+this inclues preformance tracking , capacity tracking and debuggin
+Just because something works doesn't mean it is useful, I need to add visualizations
+
+
+- How many transactions per second are we processing?
+- What percentage are fraudulent?
+- Is the system slowing down under load?
+- Are there any bottlenecks?
+
+
+the tech stack used for this sprint 4
+- Micrometer (metrics collection library)
+- Spring Boot Actuator (production-ready features)
+- Prometheus (metrics storage & querying)
+- Grafana (visualization - optional)
+
+
+after some confguration 
+http://localhost:8081/actuator/prometheus
+
+this is what promethues scrapes every 15seconds to collect metrics
+
+JVM provides some metrics by we need our customsones like, the % of the transacation that are frauds.
+
+metrics we need to tracK:
+total Transaction Counters
+Fraudulent transaction Counters
+Clean transaction counters
+detection latency timer 
+
+using the micrometer library for types, Couter types dont go down so we can just use Counter for those 
+
+MeterRegistry is like a catalog systems which holds all the metrics
+springboot creates one MeterGresitry when the app starts, we use it to create and register the metrics, we can also use micrometers to expose the metrics to Promotheus at /actuator/prometheus
+
+
+MetricService basically just increments the counter and the TransactionConsumer uses it.
+
+It starts by adding to the total # of transactions and then starts the timer, to see how fast the fraud i detected. 
+inside the try catch it checks for fraud-> if cleans increments clean and moves to finally to stop timer 
+if fraud increments fraud and moves to finaly to stop timer
+
