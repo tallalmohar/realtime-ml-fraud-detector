@@ -315,3 +315,70 @@ inside the try catch it checks for fraud-> if cleans increments clean and moves 
 if fraud increments fraud and moves to finaly to stop timer
 
 prometheus works fine! I am just going to ad a Grafana Dashboard for prettier visuals (makes it look allot nicer then the prometheus graph)
+
+
+SPRINT 5 FINALLY THE HARDEST PART OF THE ENTIRE THING
+adding the ML pipeline for checking thee fraudulent transactions
+
+basic task breakdown for this sprint (pain for the next 3 hours)
+1.Understand the ML workflow and ONNX architecture
+2.Setting up isolated python env with proper dependencies
+3.exploring the kaggle credit card dataset (284k transactions)
+4.Traning RandomForest with imbalance handling
+5.Exporting to ONNX format with schema definition
+6.Integrating the .onnx model into my java consumer
+7.Testing for performance and accuracy
+8. Updating detection methods and tuning thresholds
+
+- Rule-based: 70% accuracy, 30% false positive rate
+- ML-based: 95%+ accuracy, <5% false positive rate
+
+1. Python (training): Pandas, Scikit-Learn, data science tools
+2. Java (production): Spring Boot, real-time inference, low latency
+
+The solution: ONNX (Open Neural Network Exchange)
+
+- Universal ML model format
+- Train in Python, run anywhere
+- Supported by Microsoft, Facebook, AWS, Google
+- Industry standard for ML deployment
+
+
+instead of using just the usingRULES we need to get the following workflow for the app
+
+Transaction → FraudDetectionService
+                ↓
+            extractFeatures() (7 features)
+                ↓
+            ONNX Model (loaded at startup)
+                ↓
+            Neural network inference
+                ↓
+            return fraud probability (0.0 - 1.0)
+                ↓ (if > 0.5 threshold)
+            return true/false
+
+
+we need have 2 phases for this sprint 
+data science (python)
+need to train the raw data -> clean it -> engineer features -> train and then export the ONX
+
+phase2 is to load ONNX ->transaction -> extract same features -> inference and then prediciton
+
+the feature engineering must match exactly between training and inference
+
+my dataset 
+
+Credit Card Fraud Detection from Kaggle
+(real world fraud distribution and is preprocessed and well documented)
+it being from kaggle also means I can benchmark my results
+
+
+python libraries 
+pandas, scikit-Learn, imbalance-Learn, ONNX and skl2onnx, Matplotlib/Seaborn
+
+
+activate python env
+source ml-env/bin/activate
+
+deactivate
