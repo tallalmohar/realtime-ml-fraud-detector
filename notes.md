@@ -456,3 +456,88 @@ second training:
    this is the java-ready model
 
    models/FEATURE_ORDER.md (this is the documentation of rhte java integration)
+
+we can run it a third time on my personal 7 features from the Kaggle Data
+normalized_amount = Amount / 10000.0
+hour_of_day = Extracted from Time field
+day_of_week = Calculated from Time
+is_weekend = 1.0 if Sat/Sun, else 0.0
+payment_method_encoded = Simulated (0-4), correlated with fraud patterns
+merchant_hash = Random (0-999)
+location_hash = Random (0-999)
+
+trains RandomForest on these 7 features with SMOTE balancing 
+Exported ONNX with 7 inputs (matching my java code)
+saves to fraud_model.onnx
+
+
+Sprint 5: COMPLETE ML Pipeline 
+
+1- train_model.py
+-created python script to train a random forest classifier for fraud detection
+-used ceredit card fraud detection dataset
+-features v1-v28 (PCA-transaformed),Amount, Time
+my rule based detection was so timple, so using ML made sense, it can detect subtle fraud indicators i cant even define
+- Random Forest chosen:
+  - Handles non-linear relationships well
+  - works with imbalaned data (fraud is rare)
+  -fast inference (5-15ms)
+  -interpretable
+the results:
+Precision: 78.3% - When we say "fraud", we're right 78% of the time
+Recall: 84.7% - We catch 85% of actual frauds
+
+2- The ONNX model export  -> fraud_model.onnx
+Exported train model to ONNX format and placed it in the resources
+Choosing onnx is simple because i wanted real time fraud dectction which is sub 50ms. Running python as a seperate service would add 50-200 ms network overhead
+
+3- Transaction Model expansion
+I had to add more feilds from 8 to 36 
+v1-v28 (the PCA features from training data) + time (nomalized timestamp for ML)
+
+ML model was trained on 30 features, and we can change training and the java object must match the input 
+Transaction velocity: How many transactions in last hour?
+Location patterns: Is this location unusual for this user?
+Amount patterns: Is this amount typical for this merchant?
+Time patterns: Is this an unusual time for this user?
+The dataset we used already had these pre-computed and anonymized via PCA (Principal Component Analysis) for privacy.
+
+
+4- TransactionGenerator upgrade to accomodate the new trained model
+
+5- featureEngineeringService
+Ml needed specific input format : 30-element float array 
+normalization matters(ex $500 to 0.5)
+dection service forcuses on ML inference 
+feature service handles data transformation 
+
+6. added ONNX runtime integration 
+OrtEnvironment: Singleton - manages ONNX runtime lifecycle
+OrtSession: Loads model once at startup (not per transaction)
+Bean management: Spring handles lifecycle, prevents memory leaks
+
+7-FraudDetectionService ML integration
+Single Responsibility:
+Feature extraction → FeatureEngineeringService
+ML inference → FraudDetectionService
+Persistence → FraudPersistenceService
+
+
+the final System Architecture
+
+TRANSACTIONGEN (creats v1-v28 with realistic distribution)
+
+sends to kafka topic :transactions
+
+this is where the FraudConsumer does the work
+1.FeatureEngineeringService 
+  -normalize(amount,time,v1-v28);
+2.FraudDectionService
+  -Load ONNX model (startup)
+  -Create Input tensor
+  -Run ML inference (~10ms)
+  -Extract from sklearn Map Structure
+3.FraudPersistenceService 
+  -Save to postgreSQL 
+4.FraudAlertService 
+  -publich to fraud-alerts topi

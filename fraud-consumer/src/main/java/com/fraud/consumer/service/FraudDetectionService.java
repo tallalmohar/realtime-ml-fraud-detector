@@ -1,6 +1,7 @@
 package com.fraud.consumer.service;
 
 import ai.onnxruntime.OnnxTensor;
+import ai.onnxruntime.OnnxValue;
 import ai.onnxruntime.OrtEnvironment;
 import ai.onnxruntime.OrtException;
 import ai.onnxruntime.OrtSession;
@@ -29,7 +30,6 @@ public class FraudDetectionService {
 	// For Sprint 5: Set to false when real ML model is trained
 	private final boolean USE_RULE_BASED_DETECTION;
 
-
 	@Autowired
 	public FraudDetectionService(@Nullable OrtSession modelSession,
 			FeatureEngineeringService featureEngineeringService) {
@@ -53,19 +53,14 @@ public class FraudDetectionService {
 			return detectFraudUsingRules(transaction);
 		}
 
-		// future: real ML inference
-		/*
-		 * try {
-		 * return detectFraudUsingModel(transaction);
-		 * } catch (OrtException e){
-		 * log.error("Error during ML inference: ", transaction.getTransactionID(),e);
-		 * }
-		 * return false;
-		 */
-		fraudResult.setProbability(0f);
-		fraudResult.setReason("CLEAN");
-		fraudResult.setFraud(false);
-		return fraudResult;
+		// ML MODEL detection (Sprint 5)
+		try {
+			return detectFraudUsingModel(transaction);
+		} catch (OrtException e) {
+			log.error("Error during ML inference for transaction {}: ", transaction.getTransactionID(), e);
+			// Fallback to rule-based if ML fails
+			return detectFraudUsingRules(transaction);
+		}
 	}
 	// temp rule based fraud detection for testing
 
@@ -92,44 +87,79 @@ public class FraudDetectionService {
 		fraudResult.setProbability(0f);
 		return fraudResult; // for everything else
 	}
-	/*
-	 * FUTURE: real ml based fraud detection
-	 *
-	 * this is the real implementation that will run once we trained a model
-	 *
-	 * flow:
-	 * 1. Extract features using the FeatureEngineeringService
-	 * 2. Wrap Features in ONNX tensor
-	 * 3. Run model inference
-	 * 4. Extract fraud prob
-	 * 5. compare to threshold and return bool
-	 *
-	 */
 
-	private boolean detectFraudUsingModel(Transaction transaction) throws OrtException {
+	/**
+	 * ML-based fraud detection using ONNX model (Sprint 5)
+	 *
+	 * Flow:
+	 * 1. Extract 30 features (Time, V1-V28, Amount)
+	 * 2. Wrap features in ONNX tensor
+	 * 3. Run model inference
+	 * 4. Extract fraud probability
+	 * 5. Compare to threshold (0.5) and return result
+	 */
+	private FraudResult detectFraudUsingModel(Transaction transaction) throws OrtException {
+		FraudResult fraudResult = new FraudResult();
+
+		// 1. Extract 30 features from transaction
 		float[] features = featureEngineeringService.extractFeatures(transaction);
 
-		// create the onnx tensor from the features
-		// models expect 2d arrays (batch_size and num_features)
+		// 2. Create ONNX tensor (models expect 2D: [batch_size, num_features])
 		float[][] input2D = new float[][] { features };
 		OnnxTensor inputTensor = OnnxTensor.createTensor(environment, input2D);
 
-		// run the inference, takes the input then runs through neural networks and
-		// returns ouput
+		// 3. Run inference through the RandomForest model
 		OrtSession.Result result = modelSession.run(
-				java.util.Map.of("input", inputTensor));
+				java.util.Map.of("float_input", inputTensor));
 
-		// extract output (fraud prob)
-		// example [0.12,0.85] = 15 % legit, 85% fraud
-		float[][] output = (float[][]) result.get(0).getValue();
-		float FraudProbability = output[0][1];
+		// 4. Extract output probabilities from sklearn RandomForest ONNX output
+		// Structure: OnnxSequence<OnnxMap<Long, Float>> where map keys are class labels
+		// (0, 1)
+		OnnxValue probabilitiesValue = result.get(1);
 
-		log.info("ML Model Prediction for {}:  fraud_probability={}",
-				transaction.getTransactionID(), FraudProbability);
+		float fraudProbability;
+		if (probabilitiesValue instanceof ai.onnxruntime.OnnxSequence) {
+			ai.onnxruntime.OnnxSequence sequence = (ai.onnxruntime.OnnxSequence) probabilitiesValue;
+			// Get first element from sequence (first sample's probability map)
+			OnnxValue firstElement = sequence.getValue().get(0);
 
-		// clean up tensor to prevent mem leaks
+			if (firstElement instanceof ai.onnxruntime.OnnxMap) {
+				// OnnxMap contains {class_label -> probability}
+				ai.onnxruntime.OnnxMap onnxMap = (ai.onnxruntime.OnnxMap) firstElement;
+				@SuppressWarnings("unchecked")
+				java.util.Map<Long, Float> probMap = (java.util.Map<Long, Float>) onnxMap.getValue();
+				// Key 1 = fraud class probability
+				fraudProbability = probMap.getOrDefault(1L, 0.0f);
+			} else {
+				// Fallback: treat as tensor
+				float[][] probs = (float[][]) ((OnnxTensor) firstElement).getValue();
+				fraudProbability = probs[0][1];
+			}
+		} else if (probabilitiesValue instanceof OnnxTensor) {
+			// Direct tensor output
+			float[][] probs = (float[][]) ((OnnxTensor) probabilitiesValue).getValue();
+			fraudProbability = probs[0][1];
+		} else {
+			log.warn("Unexpected ONNX output type: {}", probabilitiesValue.getClass().getName());
+			fraudProbability = 0.0f;
+		}
+
+		// 5. Determine if fraud based on threshold
+		boolean isFraud = fraudProbability > FRAUD_THRESHOLD;
+
+		fraudResult.setFraud(isFraud);
+		fraudResult.setProbability(fraudProbability * 100); // Convert to percentage
+		fraudResult.setReason(isFraud ? "ML_HIGH_PROBABILITY" : "CLEAN");
+
+		log.info("🤖 ML Prediction for {}: fraud_prob={}% → {}",
+				transaction.getTransactionID(),
+				String.format("%.2f", fraudProbability * 100),
+				isFraud ? "FRAUD" : "CLEAN");
+
+		// Clean up to prevent memory leaks
 		inputTensor.close();
 		result.close();
-		return FraudProbability > FRAUD_THRESHOLD;
+
+		return fraudResult;
 	}
 }

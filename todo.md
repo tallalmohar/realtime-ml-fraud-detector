@@ -35,11 +35,11 @@
 - [X] (Optional) Create a basic Grafana dashboard to visualize fraud spikes
 
 ## Sprint 5: The ML Pipeline Bridge (Python to Java)
-- [ ] Prepare Python environment (Scikit-Learn, Pandas, Onnx-tools)
-- [ ] Train `RandomForest` or `XGBoost` on Kaggle Credit Card dataset
-- [ ] Export the trained model to `fraud_model.onnx`
-- [ ] Document the feature order (The exact sequence of columns the model expects)
-- [ ] Move `.onnx` file to Java `src/main/resources`
+- [X] Prepare Python environment (Scikit-Learn, Pandas, Onnx-tools)
+- [X] Train `RandomForest` or `XGBoost` on Kaggle Credit Card dataset
+- [X] Export the trained model to `fraud_model.onnx`
+- [X] Document the feature order (The exact sequence of columns the model expects)
+- [X] Move `.onnx` file to Java `src/main/resources`
 
 ## Sprint 6: Resilience & Testing
 - [ ] Implement a **Dead Letter Topic (DLT)** for malformed JSON messages

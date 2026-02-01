@@ -32,3 +32,7 @@ sprint0.md
 sprint1.md
 notes.md
 todo.md
+
+# Training data (too large for GitHub, download from Kaggle)
+data/
+*.csv
